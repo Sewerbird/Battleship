@@ -1,8 +1,15 @@
 lume = require 'lib/lume'
 game = require 'game'
+moonshine = require 'moonshine'
 
 --Global Gamestate
 function love.load(args)
+  effect = moonshine(moonshine.effects.crt)
+              .chain(moonshine.effects.scanlines)
+              .chain(moonshine.effects.glow)
+              .chain(moonshine.effects.dmg)
+  effect.dmg.palette = "green"
+  effect.glow.strength = 10
   game.load()
 end
 
@@ -26,6 +33,8 @@ function love.update(dt)
 end
 
 function love.draw()
-  game.draw()
+  effect(function()
+    game.draw()
+  end)
 end
 
