@@ -23,10 +23,26 @@ function game.update(dt)
     blip.x = lume.wrap(blip.x + blip.dx, 0, love.graphics.getWidth())
     blip.y = lume.wrap(blip.y + blip.dy, 0, love.graphics.getHeight())
     blip.age = blip.age + dt
+    if blip.type == "torpedo" then blip.age = 0 end
     local r_x, r_y = lume.vector(radar.angle, 500)
-    local z = game.line_intercepts_circle(radar.x, radar.y, r_x + radar.x, r_y + radar.y, blip.x, blip.y, 10, radar.angle)
+    local z = game.line_intercepts_circle(radar.x, radar.y, r_x + radar.x, r_y + radar.y, blip.x, blip.y, 10)
     if z then
       blip.age = 0
+    end
+    for j, other in ipairs(blips) do
+      if (i ~= j) and 
+         ((blip.type == "torpedo" and other.type == "ship") 
+           or (blip.type == "ship" and other.type == "torpedo")) and
+         (game.circle_intercepts_circle(blip.x, blip.y, 10, other.x, other.y, 10)) then
+         blip.destroy = true
+         other.destroy = true
+       end
+    end
+  end
+
+  for i=#blips,1,-1 do
+    if blips[i].destroy then
+      table.remove(blips, i)
     end
   end
   radar.angle = radar.angle + 0.01
@@ -39,21 +55,22 @@ function game.draw()
   love.graphics.setColor(1.0, 1.0, 1.0)
   local r_x, r_y = lume.vector(radar.angle, 500)
   for i, blip in ipairs(blips) do
-    local z = game.line_intercepts_circle(radar.x, radar.y, r_x + radar.x, r_y + radar.y, blip.x, blip.y, 10, radar.angle)
-    if z then
-      love.graphics.setColor(1.0, 0.0, 0.0, 2.0-blip.age)
+    --Fade blips according to time since last detection
+    local fadeout = 2.0
+    if blip.age == 0 then
+      love.graphics.setColor(1.0, 0.0, 0.0, 1.0 * ((fadeout-blip.age)/fadeout))
     else
-      love.graphics.setColor(1.0, 1.0, 1.0, 2.0-blip.age)
+      love.graphics.setColor(1.0, 1.0, 1.0, 1.0 * ((fadeout-blip.age)/fadeout))
     end
     love.graphics.circle('fill', blip.x, blip.y, 10, 10)
-    love.graphics.setColor(1.0, 0.0, 1.0)
   end
+  --Draw radar sweep
   love.graphics.setColor(0.0, 1.0, 1.0)
   love.graphics.line(radar.x,radar.y,radar.x + r_x, radar.y + r_y)
   love.graphics.line(radar.x,radar.y,radar.x - r_x, radar.y - r_y)
 end
 
-function game.line_intercepts_circle(x1, y1, x2, y2, cX, cY, cR, radar_angle)
+function game.line_intercepts_circle(x1, y1, x2, y2, cX, cY, cR)
   dxdy = ((y2 - y1)/(x2 - x1))
   a = -dxdy
   b = 1.0
@@ -62,7 +79,30 @@ function game.line_intercepts_circle(x1, y1, x2, y2, cX, cY, cR, radar_angle)
   return d < cR
 end
 
+function game.circle_intercepts_circle(cx1, cy1, cr1, cx2, cy2, cr2)
+  local D = math.sqrt(math.pow(cx2 - cx1, 2) + math.pow(cy2 - cy1, 2))
+  return D < (cr2 + cr1)
+end
+
+function game.fire_torpedo(x, y)
+  local x0 = love.graphics.getWidth()/2
+  local y0 = love.graphics.getHeight()/2
+  local D = math.sqrt(math.pow(x-x0,2) + math.pow(y-y0,2))
+  local dx = x-x0
+  local dy = y-y0
+  table.insert(blips, game.make_torpedo(x0, y0, dx/D, dy/D))
+end
+
 function game.make_torpedo(x, y, dx, dy)
+  return {
+    x = x,
+    y = y,
+    dx = dx,
+    dy = dy,
+    age = 0,
+    hp = 1,
+    type = "torpedo"
+  }
 end
 
 function game.make_radar(x, y, angle)
