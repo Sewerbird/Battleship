@@ -1,4 +1,14 @@
 lume = require 'lib/lume'
+lume.wrap = function(value, minimum, maximum)
+  local range = maximum - minimum
+  while value < minimum do
+    value = value + range
+  end
+  while value > maximum do
+    value = value - range
+  end
+  return value
+end
 game = require 'game'
 moonshine = require 'moonshine'
 

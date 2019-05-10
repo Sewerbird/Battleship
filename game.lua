@@ -20,8 +20,8 @@ end
 
 function game.update(dt)
   for i, blip in ipairs(blips) do
-    blip.x = blip.x + blip.dx
-    blip.y = blip.y + blip.dy
+    blip.x = lume.wrap(blip.x + blip.dx, 0, love.graphics.getWidth())
+    blip.y = lume.wrap(blip.y + blip.dy, 0, love.graphics.getHeight())
     blip.age = blip.age + dt
     local r_x, r_y = lume.vector(radar.angle, 500)
     local z = game.line_intercepts_circle(radar.x, radar.y, r_x + radar.x, r_y + radar.y, blip.x, blip.y, 10, radar.angle)
