@@ -1,161 +1,141 @@
+--Libs
+local love = love
+local lume = lume
+
+--Deps
+local Ship = require('ship')
+local Blip = require('blip')
+local Torpedo = require('torpedo')
+local Sonar = require('sonar')
+local Radar = require('radar')
+
+--State
 local game = {}
-
 local blips = {}
+local ships = {}
+local torpedoes = {}
 local radar = {}
+local sonar = {}
+local input = {}
+local images = {
+  maps = {
+    archipelago = love.graphics.newImage("map.png")
+  }
+}
+local sounds = {
+  actions = {
+    sonar_ping = function() local z = love.audio.newSource("sonar_ping.wav","static"); love.audio.play(z) end,
+    torpedo_launch = function() local z = love.audio.newSource("torpedo_launch.wav","static"); love.audio.play(z) end,
+  },
+  pings = {
+    blip_1 = love.audio.newSource("blip_1.wav","static"),
+    hit_1 = love.audio.newSource("hit_1.wav","static"),
+    sonar_1 = love.audio.newSource("sonar_1.wav","static"),
+  }
+}
 
-function game.load()
-  love.math.setRandomSeed(love.math.getRandomSeed())
-  for i = 0, 3 do
-    local r_x = love.math.random() * love.graphics.getWidth()
-    local r_y = love.math.random() * love.graphics.getHeight()
-    table.insert(blips, game.make_ship_blip(r_x, r_y))
-  end
-  for i = 0, 10 do
-    local r_x = love.math.random() * love.graphics.getWidth()
-    local r_y = love.math.random() * love.graphics.getHeight()
-    table.insert(blips, game.make_ghost_blip(r_x, r_y))
-  end
-  radar = game.make_radar(love.graphics.getWidth()/2, love.graphics.getHeight()/2, 0)
+function game.get_images()
+  return images
 end
 
-function game.update(dt)
-  for i, blip in ipairs(blips) do
-    blip.x = lume.wrap(blip.x + blip.dx, 0, love.graphics.getWidth())
-    blip.y = lume.wrap(blip.y + blip.dy, 0, love.graphics.getHeight())
-    blip.age = blip.age + dt
-    -- Refresh blips that are seen by radar
-    if game.line_intercepts_circle(radar, blip) then
-      blip.age = 0
-    end
-    -- Detect collisions of torpedoes hitting ships
-    for j, other in ipairs(blips) do
-      if ((blip.type == "torpedo" and other.type == "ship") or 
-          (blip.type == "ship" and other.type == "torpedo")) and
-         game.circle_intercepts_circle(blip, other) then
-         blip.destroy = true
-         other.destroy = true
-       end
-    end
+function game.get_ships()
+  return ships
+end
+
+function game.get_blips()
+  return blips
+end
+
+function game.get_sounds()
+  return sounds
+end
+
+--Functions
+function game.load()
+  love.math.setRandomSeed(love.math.getRandomSeed())
+  --Place Enemy Ships
+  for _ = 0, 3 do
+    local enemy_ship = Ship:create({x= love.math.random() * love.graphics.getWidth(), y= love.math.random() * love.graphics.getHeight(), r= 10})
+    table.insert(ships, enemy_ship)
   end
-  -- Remove destroyed things
-  for i=#blips,1,-1 do
-    if blips[i].destroy then
-      table.remove(blips, i)
-    end
+  --Place Player Ship
+  local player_ship = Ship:create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1})
+  table.insert(ships, player_ship)
+  radar = Radar:create({x= player_ship.x, y= player_ship.y, angle= player_ship.angle})
+  sonar = Sonar:create({x= player_ship.x, y= player_ship.y, angle= player_ship.angle})
+end
+
+function game.commit_input(frame_input)
+  input = frame_input
+end
+
+function game.cleanup(pool)
+  for i = #pool,1,-1 do
+    if pool[i].destroy then table.remove(pool, i) end
   end
-  -- Update radar scan azimuth
-  radar.angle = radar.angle + 0.01
-  if radar.angle >= 2*math.pi then
-    radar.angle = radar.angle - 2*math.pi
+end
+
+function game.update(dt, input)
+  for _, torpedo in ipairs(torpedoes) do
+    torpedo:update(dt)
   end
+  for _, blip in ipairs(blips) do
+    blip:update(dt)
+  end
+  for _, ship in ipairs(ships) do
+    ship:update(dt, input)
+  end
+  local player_ship, _ = lume.match(ships, function(e) return e.id == -1 end)
+  radar:update(dt, player_ship)
+  sonar:update(dt, player_ship)
+
+  --Cleanup
+  game.cleanup(blips)
+  game.cleanup(ships)
+  game.cleanup(torpedoes)
 end
 
 function game.draw()
   love.graphics.setColor(1.0, 1.0, 1.0)
-  local r_x, r_y = lume.vector(radar.angle, 500)
-  for i, blip in ipairs(blips) do
-    --Fade blips according to time since last detection
-    local fadeout = 2.0
-    love.graphics.setColor(1.0, 1.0, 1.0, 1.0 * ((fadeout-blip.age)/fadeout))
-    love.graphics.circle('fill', blip.x, blip.y, 10, 10)
+  --love.graphics.draw(images.maps.archipelago)
+  for _, blip in ipairs(blips) do
+    blip:draw()
   end
-  --Draw radar sweep
-  love.graphics.setColor(1.0, 1.0, 1.0)
-  love.graphics.line(radar.x,radar.y,radar.x + r_x, radar.y + r_y)
-  love.graphics.line(radar.x,radar.y,radar.x - r_x, radar.y - r_y)
+  for _, torpedo in ipairs(torpedoes) do
+    torpedo:draw()
+  end
+  for _, ship in ipairs(ships) do
+    ship:draw()
+  end
+  radar:draw()
+  sonar:draw()
 end
 
--- Lines have a point (x,y) and an angle (angle)
--- Circles have a center point (x,y) and a radius (r)
-function game.line_intercepts_circle(line, circle)
-  assert(game.is_a_line(line))
-  assert(game.is_a_circle(circle))
-  local x1 = line.x
-  local y1 = line.y
-  local r_x, r_y = lume.vector(line.angle, 1)
-  local x2 = x1 + r_x
-  local y2 = x1 + r_y
-  local cX = circle.x
-  local cY = circle.y
-  local cR = circle.r
-  local dxdy = ((y2 - y1)/(x2 - x1))
-  local a = -dxdy
-  local b = 1.0
-  local c = - (y1 - dxdy*x1)
-  local d = math.abs((a*cX) + (b*cY) + c) / math.sqrt((a*a) + (b*b))
-  return d < cR
+function game.ping_sonar()
+  sounds.actions.sonar_ping()
+  sonar.r = 0
 end
 
--- Circles have a center point (x,y) and a radius (r)
-function game.circle_intercepts_circle(circleA, circleB)
-  assert(game.is_a_circle(circleA))
-  assert(game.is_a_circle(circleB))
-  local D = math.sqrt(math.pow(circleB.x - circleA.x, 2) + math.pow(circleB.y - circleA.y, 2))
-  return D < (circleA.r + circleB.r)
-end
-
-function game.is_a_line(line)
-  return line.x and line.y and line.angle
-end
-
-function game.is_a_circle(circle)
-  return circle.x and circle.y and circle.r 
-end
-
-function game.fire_torpedo(x, y)
+function game.fire_enemy_torpedo(ship, x, y)
   local x0 = love.graphics.getWidth()/2
   local y0 = love.graphics.getHeight()/2
   local D = math.sqrt(math.pow(x-x0,2) + math.pow(y-y0,2))
+  local dx = x0 - x
+  local dy = y0 - y
+  local speed = 3
+  table.insert(torpedoes, Torpedo:create({launcher= ship.id, x= x, y= y, dx= speed * dx/D, dy= speed * dy/D}))
+end
+
+function game.fire_torpedo(x, y)
+  sounds.actions.torpedo_launch()
+  local player, _ = lume.match(ships, function(e) return e.id == -1 end)
+  local x0 = player.x
+  local y0 = player.y
+  local D = math.sqrt(math.pow(x-x0,2) + math.pow(y-y0,2))
   local dx = x-x0
   local dy = y-y0
-  table.insert(blips, game.make_torpedo(x0, y0, dx/D, dy/D))
-end
-
-function game.make_radar(x, y, angle)
-  return {
-    x = x,
-    y = y,
-    angle = angle
-  }
-end
-
-function game.make_torpedo(x, y, dx, dy)
-  return {
-    x = x,
-    y = y,
-    r = 10,
-    dx = dx,
-    dy = dy,
-    age = 0,
-    hp = 1,
-    type = "torpedo"
-  }
-end
-
-function game.make_ship_blip(x, y)
-  return {
-    x = x,
-    y = y,
-    r = 10,
-    dx = 0,
-    dy = 1,
-    hp = 1,
-    age = 0,
-    type = "ship"
-  }
-end
-
-function game.make_ghost_blip(x, y)
-  return {
-    x = x,
-    y = y,
-    r = 10,
-    dx = 0,
-    dy = 0,
-    hp = 0,
-    age = 0,
-    type = "ghost"
-  }
+  local speed = 3
+  table.insert(torpedoes, Torpedo:create({launcher= -1, x= x0, y= y0, dx= speed * dx/D, dy= speed * dy/D}))
 end
 
 return game
