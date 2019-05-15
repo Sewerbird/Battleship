@@ -1,17 +1,14 @@
-local Blip = {}
-Blip.__index = Blip
+local lib = require('ed')
 
-function Blip:create(options)
-  local this = {
-    x = options.x or 0,
-    y = options.y or 0,
-    r = options.r or 10,
-    age = options.age or 0,
-    max_age = options.max_age or 1,
-  }
-  setmetatable(this, Blip)
-  return this
-end
+local Blip = lib.class({
+  x = 0,
+  y = 0,
+  r = 10,
+  age = 0,
+  max_age = 1,
+})
+:implements("Drawable")
+:implements("Updatable")
 
 function Blip:update(dt)
   self.age = self.age + dt

@@ -56,11 +56,10 @@ function game.load()
     table.insert(ships, enemy_ship)
   end
   --Place Player Ship
-  local player_ship = Ship:create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1,
-    equipment= {
-      radar= Radar:create(),
-      sonar= Sonar:create(),
-    }})
+  local player_ship = Ship
+                      :create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1})
+                      :equip(Radar:create())
+                      :equip(Sonar:create())
   table.insert(ships, player_ship)
 end
 

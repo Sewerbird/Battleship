@@ -1,23 +1,23 @@
+local lib = require('ed')
+
 local Blip = require('blip')
 
-local Sonar = {}
-Sonar.__index = Sonar
-
-function Sonar:create(options)
-  options = options or {}
-  local this = {
-    type = "sonar",
-    x = options.x or 0,
-    y = options.y or 0,
-    r = options.r or 1000000000,
-    dr = options.dr or 90,
-    false_positive_rate = options.false_positive_rate or -1, -- Ghosts per second
-    false_positive_accumulator = options.false_positive_accumulator or 0,
-    distance = options.distance or 1500
-  }
-  setmetatable(this, Sonar)
-  return this
-end
+local Sonar = lib.class({
+  type= "sonar",
+  x= 0,
+  y= 0,
+  r= 9999,
+  dr= 90,
+  angle= 0,
+  false_positive_rate= -1,
+  false_positive_accumulator= 0,
+  distance= 1500,
+})
+:implements("Sensor")
+:implements("Orientable")
+:implements("Equippable")
+:implements("Drawable")
+:implements("Updatable")
 
 function Sonar:update(dt, equipper)
   local w = love.graphics.getWidth()

@@ -1,23 +1,22 @@
+local lib = require('ed')
+
 local Blip = require('blip')
 
-local Radar = {}
-Radar.__index = Radar
-
-function Radar:create(options)
-  options = options or {}
-  local this = {
-    type = "radar",
-    x = options.x or 0,
-    y = options.y or 0,
-    angle = options.angle or 0,
-    false_positive_rate = options.false_positive_rate or -1, -- Ghosts per second
-    false_positive_accumulator = options.false_positive_accumulator or 0,
-    hertz = options.hertz or 0.1,
-    distance = options.distance or 500,
-  }
-  setmetatable(this, Radar)
-  return this
-end
+local Radar = lib.class({
+  type = "radar",
+  x = 0,
+  y = 0,
+  angle = 0,
+  hertz = 0.1,
+  false_positive_rate = -1, -- Ghosts per second
+  false_positive_accumulator = 0,
+  distance = 500,
+})
+:implements("Sensor")
+:implements("Orientable")
+:implements("Equippable")
+:implements("Drawable")
+:implements("Updatable")
 
 function Radar:update(dt, equipper)
   self.x = equipper.x
