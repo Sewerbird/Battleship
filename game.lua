@@ -4,7 +4,6 @@ local lume = lume
 
 --Deps
 local Ship = require('ship')
-local Blip = require('blip')
 local Torpedo = require('torpedo')
 local Sonar = require('sonar')
 local Radar = require('radar')
@@ -126,9 +125,9 @@ function game.fire_enemy_torpedo(ship, x, y)
   table.insert(torpedoes, Torpedo:create({launcher= ship.id, x= x, y= y, dx= speed * dx/D, dy= speed * dy/D}))
 end
 
-function game.fire_torpedo(x, y)
+function game.fire_torpedo(ship,x, y)
   sounds.actions.torpedo_launch()
-  local player, _ = lume.match(ships, function(e) return e.id == -1 end)
+  local player = ship
   local x0 = player.x
   local y0 = player.y
   local D = math.sqrt(math.pow(x-x0,2) + math.pow(y-y0,2))

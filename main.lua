@@ -30,9 +30,6 @@ function love.load(args)
 end
 
 function love.keypressed(key)
-  if key == "space" then
-    game.ping_sonar(x,y)
-  end
   if key == "return" then
     fancy = not fancy
   end
@@ -46,7 +43,6 @@ function love.touchpressed(x,y)
 end
 
 function love.mousepressed(x,y)
-  game.fire_torpedo(x,y)
 end
 
 function love.mousemoved(x,y,dx,dy)
@@ -64,8 +60,14 @@ function love.update(dt)
   if love.keyboard.isDown("d") then
     input.hard_to_starboard = true
   end
+  if love.keyboard.isDown("space") then
+    input.ping_sonar = true
+  end
+  if love.mouse.isDown(1) then
+    input.fire_torpedo = true 
+  end
   game.commit_input(input)
-  game.update(dt)
+  game.update(dt, input)
 end
 
 function love.draw()

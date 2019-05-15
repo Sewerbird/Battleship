@@ -44,7 +44,7 @@ function Ship:draw()
   love.graphics.line(self.x,self.y,self.x+h_x,self.y+h_y)
 end
 
-function Ship:update(dt)
+function Ship:update(dt, input)
   -- STATE: Sinking
   if self.is_sinking then
     self.sink_timer = self.sink_timer + dt
@@ -70,6 +70,12 @@ function Ship:update(dt)
     end
     if input.hard_to_starboard then
       self.angle = self.angle + (dt * math.pi / 2) --turning radius of 90* per second
+    end
+    if input.ping_sonar then
+      game.ping_sonar()
+    end
+    if input.fire_torpedo then
+      game.fire_torpedo(self, love.mouse.getX(), love.mouse.getY())
     end
     local hx, hy = lume.vector(self.angle, self.speed)
     self.dx = hx * dt
