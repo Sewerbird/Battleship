@@ -4,7 +4,9 @@ local Sonar = {}
 Sonar.__index = Sonar
 
 function Sonar:create(options)
+  options = options or {}
   local this = {
+    type = "sonar",
     x = options.x or 0,
     y = options.y or 0,
     r = options.r or 1000000000,
@@ -42,11 +44,17 @@ function Sonar:update(dt, equipper)
   return self
 end
 
-function Sonar:draw()
+function Sonar:draw(equipper)
   --Draw sonar ping
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.circle('line', self.x, self.y, self.r, self.r)
 end
 
+function Sonar:onEquip(equipper)
+  self.x = equipper.x
+  self.y = equipper.y
+  self.angle = equipper.angle
+  return self
+end
 
 return Sonar

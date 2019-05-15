@@ -20,9 +20,15 @@ function Ship:create(options)
     max_sink_timer = options.max_sink_timer or 3,
     torpedo_fire_timer = options.torpedo_fire_timer or 0,
     torpedo_fire_rate = options.torpedo_fire_rate or 1,
-    modules = {}
+    uninitialized_equipment = options.equipment or {},
+    equipment = {}
   }
   setmetatable(this,Ship)
+
+  for k, v in pairs(this.uninitialized_equipment) do
+    this:equip(v)
+  end
+  this.uninitialized_equipment = nil
   return this
 end
 
@@ -38,6 +44,10 @@ function Ship:draw()
   end
 
   -- STATE: Alive
+  --Update Modules
+  for _, module in ipairs(self.equipment) do
+    if module.draw then module:draw(self) end
+  end
   love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
   love.graphics.circle('line', self.x, self.y, self.r, self.r * 2)
   local h_x, h_y = lume.vector(self.angle,self.r)
@@ -54,7 +64,7 @@ function Ship:update(dt, input)
 
   -- STATE: Alive
   --Update Modules
-  for _, module in ipairs(self.modules) do
+  for _, module in ipairs(self.equipment) do
     if module.update then module:update(dt, self) end
   end
   --Update position and timers
@@ -91,7 +101,11 @@ function Ship:update(dt, input)
 end
 
 function Ship:equip(equipment)
-  table.insert(self.modules, equipment)
+  table.insert(self.equipment, equipment:onEquip(self))
+end
+
+function Ship:get_module(equipment_type)
+  return lume.match(self.equipment, function(e) return e.type == equipment_type end)
 end
 
 return Ship

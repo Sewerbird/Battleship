@@ -4,7 +4,9 @@ local Radar = {}
 Radar.__index = Radar
 
 function Radar:create(options)
+  options = options or {}
   local this = {
+    type = "radar",
     x = options.x or 0,
     y = options.y or 0,
     angle = options.angle or 0,
@@ -40,11 +42,18 @@ function Radar:update(dt, equipper)
   return self
 end
 
-function Radar:draw()
+function Radar:draw(equipper)
   local r_x, r_y = lume.vector(self.angle, self.distance)
   love.graphics.setColor(1.0, 1.0, 1.0)
   love.graphics.line(self.x,self.y,self.x + r_x, self.y + r_y)
   love.graphics.line(self.x,self.y,self.x - r_x, self.y - r_y)
+end
+
+function Radar:onEquip(equipper)
+  self.x = equipper.x
+  self.y = equipper.y
+  self.angle = equipper.angle
+  return self
 end
 
 return Radar

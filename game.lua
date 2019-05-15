@@ -13,8 +13,6 @@ local game = {}
 local blips = {}
 local ships = {}
 local torpedoes = {}
-local radar = {}
-local sonar = {}
 local input = {}
 local images = {
   maps = {
@@ -58,10 +56,12 @@ function game.load()
     table.insert(ships, enemy_ship)
   end
   --Place Player Ship
-  local player_ship = Ship:create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1})
+  local player_ship = Ship:create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1,
+    equipment= {
+      radar= Radar:create(),
+      sonar= Sonar:create(),
+    }})
   table.insert(ships, player_ship)
-  radar = Radar:create({x= player_ship.x, y= player_ship.y, angle= player_ship.angle})
-  sonar = Sonar:create({x= player_ship.x, y= player_ship.y, angle= player_ship.angle})
 end
 
 function game.commit_input(frame_input)
@@ -85,8 +85,6 @@ function game.update(dt, input)
     ship:update(dt, input)
   end
   local player_ship, _ = lume.match(ships, function(e) return e.id == -1 end)
-  radar:update(dt, player_ship)
-  sonar:update(dt, player_ship)
 
   --Cleanup
   game.cleanup(blips)
@@ -106,13 +104,12 @@ function game.draw()
   for _, ship in ipairs(ships) do
     ship:draw()
   end
-  radar:draw()
-  sonar:draw()
 end
 
 function game.ping_sonar()
   sounds.actions.sonar_ping()
-  sonar.r = 0
+  local player_ship, _ = lume.match(ships, function(e) return e.id == -1 end)
+  player_ship:get_module("sonar").r = 0
 end
 
 function game.fire_enemy_torpedo(ship, x, y)
