@@ -52,12 +52,12 @@ function game.load()
   love.math.setRandomSeed(love.math.getRandomSeed())
   --Place Enemy Ships
   for _ = 0, 3 do
-    local enemy_ship = Ship:create({x= love.math.random() * love.graphics.getWidth(), y= love.math.random() * love.graphics.getHeight(), r= 10})
+    local enemy_ship = Ship:create({x= love.math.random() * love.graphics.getWidth(), y= love.math.random() * love.graphics.getHeight(), r= 10, angle= math.pi * 3 / 4, speed = 10})
     table.insert(ships, enemy_ship)
   end
   --Place Player Ship
   local player_ship = Ship
-                      :create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, id= -1})
+                      :create({x= love.graphics.getWidth()/2, y= love.graphics.getHeight()/2, r= 10, speed= 5, id= -1})
                       :equip(Radar:create())
                       :equip(Sonar:create())
   table.insert(ships, player_ship)
@@ -106,9 +106,8 @@ function game.draw()
 end
 
 function game.ping_sonar()
-  sounds.actions.sonar_ping()
   local player_ship, _ = lume.match(ships, function(e) return e.id == -1 end)
-  player_ship:get_module("sonar").r = 0
+  player_ship:get_module("sonar"):activate()
 end
 
 function game.fire_enemy_torpedo(ship, x, y)

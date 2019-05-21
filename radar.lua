@@ -26,17 +26,10 @@ function Radar:update(dt, equipper)
   -- Check Radar for new blips (ghosts or ships)
   -- True Positives
   for _, ship in ipairs(game.get_ships()) do
-    if geom.line_intercepts_circle(self, ship) and ship.id ~= -1 then
+    if geom.line_intercepts_circle(self, ship) and ship.id ~= equipper.id and ship.id ~= self.equipper_id then
       table.insert(game.get_blips(), Blip:create({x= ship.x, y= ship.y, r= ship.r}))
       love.audio.play(game.get_sounds().pings.blip_1)
     end
-  end
-  -- False Positives
-  for _ = 0, self.false_positive_accumulator do
-    self.false_positive_accumulator = self.false_positive_accumulator - 1
-    local fp_x, fp_y = lume.vector(self.angle, ((2.0 * love.math.random()) - 1.0) * self.distance)
-    table.insert(game.get_blips(), Blip:create({x= self.x + fp_x, y= self.y + fp_y, r= love.math.random() * 5}))
-    love.audio.play(game.get_sounds().pings.blip_1)
   end
   return self
 end
@@ -49,6 +42,7 @@ function Radar:draw(equipper)
 end
 
 function Radar:onEquip(equipper)
+  self.equipper_id = equipper.id
   self.x = equipper.x
   self.y = equipper.y
   self.angle = equipper.angle

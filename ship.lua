@@ -75,18 +75,17 @@ function Ship:update(dt, input)
     end
     if input.fire_torpedo then
       if self.torpedo_fire_timer >= self.torpedo_fire_rate then
-        self.torpedo_fire_timer = self.torpedo_fire_timer - self.torpedo_fire_rate
+        self.torpedo_fire_timer = self.torpedo_fire_timer % self.torpedo_fire_rate
         game.fire_torpedo(self, love.mouse.getX(), love.mouse.getY())
       end
     end
-    local hx, hy = lume.vector(self.angle, self.speed)
-    self.dx = hx * dt
-    self.dy = hy * dt
+    self.dx, self.dy = lume.vector(self.angle, self.speed)
   --Otherwise Do AI
   else
+    self.dx, self.dy = lume.vector(self.angle, self.speed)
     if self.is_firing then
       if self.torpedo_fire_timer >= self.torpedo_fire_rate then
-        self.torpedo_fire_timer = self.torpedo_fire_timer - self.torpedo_fire_rate
+        self.torpedo_fire_timer = self.torpedo_fire_timer % self.torpedo_fire_rate
         game.fire_enemy_torpedo(self, self.x, self.y)
       end
     end
